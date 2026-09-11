@@ -120,7 +120,7 @@ function App() {
   const createTask = async (data) => {
     try {
       const task = await api.addTask(data);
-      setTasks((prev) => [...prev, task]);
+      setTasks((prev) => (prev.some((t) => t.id === task.id) ? prev : [...prev, task]));
       setTaskModal(null);
       showToast("Task created");
     } catch (err) {
@@ -161,9 +161,14 @@ function App() {
   const addComment = async (taskId, text) => {
     try {
       const comment = await api.addComment(taskId, { author: user, text });
-      setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, comments: [...(t.comments || []), comment] } : t))
-      );
+      setTasks((prev) => {
+        const idx = prev.findIndex((t) => t.id === taskId);
+        if (idx === -1) return prev;
+        if ((prev[idx].comments || []).some((c) => c.id === comment.id)) return prev;
+        const next = [...prev];
+        next[idx] = { ...prev[idx], comments: [...(prev[idx].comments || []), comment] };
+        return next;
+      });
       showToast("Comment added");
     } catch (err) {
       showToast(err.message);

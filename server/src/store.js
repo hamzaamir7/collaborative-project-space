@@ -128,6 +128,14 @@ function migrate(raw) {
     comments: [],
     ...t,
   }));
+  if (!db.seq) {
+    db.seq = {
+      t: (db.tasks || []).length,
+      m: (db.milestones || []).length,
+      c: (db.tasks || []).reduce((n, t) => n + (t.comments || []).length, 0),
+      a: (db.activityLog || []).length,
+    };
+  }
   return db;
 }
 
@@ -160,9 +168,11 @@ export function getDb() {
 }
 
 export function nextId(prefix) {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random()
-    .toString(36)
-    .slice(2, 8)}`;
+  const labels = { t: "T", m: "M", c: "C", a: "A" };
+  const label = labels[prefix] || prefix.toUpperCase();
+  db.seq = db.seq ?? {};
+  db.seq[prefix] = (db.seq[prefix] || 0) + 1;
+  return `${label}-${db.seq[prefix]}`;
 }
 
 export function stamp() {
